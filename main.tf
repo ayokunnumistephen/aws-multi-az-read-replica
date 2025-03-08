@@ -38,7 +38,7 @@ resource "aws_eip" "rds-eip" {
 resource "aws_security_group" "rds-sg-frontend" {
   name        = "rds-sg-frontend"
   description = "rds-frontend-security-group"
-  vpc_id      = aws_vpc.vpc.id
+  vpc_id      = module.vpc.vpc_id
 
   ingress {
     description = "SSH from VPC"
@@ -76,14 +76,14 @@ resource "aws_security_group" "rds-sg-frontend" {
 resource "aws_security_group" "rds-sg-backend" {
   name        = "rds-sg-backend"
   description = "rds-backend-security-group"
-  vpc_id      = aws_vpc.vpc.id
+  vpc_id      = module.vpc.vpc_id
 
   ingress {
     description = "mysql access"
     from_port   = 3306
     to_port     = 3306
     protocol    = "tcp"
-    security_groups = [aws_security_group.rds-sg-frontend]
+    security_groups = [aws_security_group.rds-sg-frontend.id]
   }
   egress {
     from_port  = 0
@@ -103,8 +103,9 @@ resource "aws_instance" "wordpress-webserver" {
   associate_public_ip_address = true
   subnet_id                   = module.vpc.public_subnets[0]
   key_name                    = module.keypair.rds-pub-key
-  vpc_security_group_ids      = [aws_security_group.Team2-capstone-sg-frontend.id]
-  user_data                   = templatefile("./rds-userdata.sh")
+  vpc_security_group_ids      = [aws_security_group.rds-sg-frontend.id]
+  user_data                   = local.wordpress-user-data
+
   tags = {
     Name = "${local.name}-webserver"
   }
@@ -113,7 +114,7 @@ resource "aws_instance" "wordpress-webserver" {
 #creating database subnet group
 resource "aws_db_subnet_group" "rds-db-subnet-group" {
   name        = "rds-db-subnet-group"
-  subnet_ids  = var.db-subnets-id # Private subnets for security
+  subnet_ids  = module.vpc.private_subnets # Private subnets for security
   description = "Subnet group for Multi-AZ RDS deployment"
 
   tags = {

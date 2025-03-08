@@ -25,7 +25,7 @@ variable "public-subnets-cidr" {
   type        = list(string)
 }
 
-variable "db-subnets-id" {}
+# variable "db-subnets-id" {}
 
 ######################
 # keypair name
